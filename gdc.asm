@@ -51,17 +51,17 @@ main:
         slt $t2, $t0, $t1
         beq $t2, $zero, skip #If first input  is greater then we do not do anything...
         #Otherwise we swap the values
-        add $t2 , $zero, $a0
+        add $t3 , $zero, $t0
         
-        move $a0, $a1
-        move $a1 , $t2
+        move $t0, $t1#high
+        move $t1 , $t3#low
         
         li $v0,4        # syscall to print String
     	la $a0,MsgH     # load address of Msg1
     	syscall
     	
     	li $v0,1	# print_int syscall code = 1
-	move $a0, $a0   # print n! (result)
+	move $a0, $t0   # print n! (result)
 	syscall	
     	
     	li $v0,4        # syscall to print String
@@ -69,10 +69,12 @@ main:
     	syscall
         
         li $v0,1	# print_int syscall code = 1
-	move $a0, $t3   # print n! (result)
+	move $a0, $t1   # print n! (result)
 	syscall	
         
         skip:
+        
+        
         
     	move $a0, $t0
     	move $a1, $t1	# Move Argument A to $a0
@@ -87,6 +89,7 @@ main:
     	li $v0,1	# print_int syscall code = 1
 	move $a0, $t3   # print n! (result)
 	syscall	
+    	
     	j Exit
     
 error:   # Print string err_msg - error message
@@ -98,22 +101,35 @@ Exit:   li $v0,10       # EXIT
     	syscall  
 
 gdcFunc:
-	addi $sp, $sp, -12 # space for two words
+	addi $sp, $sp, -16 # space for two words
 	
-	sw $ra, 8($sp)    # save return address
-	sw $a0, 4($sp)    # save return address
-	sw $a1, 0($sp)    # temporary variable to hold n
+	sw $ra, 12($sp)    # save return address
+	sw $a0, 8($sp)    # saves variable to igh
+	sw $a1, 4($sp)    # saves variable to low
+	sw $a1, 0($sp)    # saves the equality resutl
+
+	
+	beq $a1, $zero, gdc_return
+	
+	div $a0 , $a1
+	mflo $v1
+	move $a1, $v1
+	
+	jal gdcFunc	
+	
 	
 	li $v0, 1         # initially, the return value $v0=1
-	ble $a0, $zero, gdc_return
+	ble $a0, $zero, 
 	
 	addi $a0, $a0, -1
 	jal gdcFunc
 	lw $a0, 0($sp)    # retrieve original n
 	mul $v0, $v0, $a0 # n * fact(n - 1)
 
+
+
 gdc_return:
-	lw $ra 4($sp)     # restore $ra
-	addi $sp, $sp, 8  # restore $sp
+	lw $ra 12($sp)     # restore $ra
+	addi $sp, $sp, 16  # restore $sp
 	jr $ra            # back to caller
 
